@@ -40,6 +40,7 @@ func getSigfile() string {
 	if err == nil {
 		sigfile = filepath.Join(configDir, "soloio.sig")
 	}
+	return sigfile
 }
 
 // Format1 calls a basic version check
