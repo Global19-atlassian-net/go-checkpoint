@@ -431,18 +431,7 @@ func checkSignature(path string) (string, error) {
 	}
 
 	// The file doesn't exist, so create a signature.
-	var b [16]byte
-	n := 0
-	for n < 16 {
-		n2, err := rand.Read(b[n:])
-		if err != nil {
-			return "", err
-		}
-
-		n += n2
-	}
-	signature := fmt.Sprintf(
-		"%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
+	b = generateSignature()
 
 	// Make sure the directory holding our signature exists.
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
@@ -455,6 +444,21 @@ func checkSignature(path string) (string, error) {
 	}
 
 	return signature, nil
+}
+
+func generateSignature() []byte {
+	var b [16]byte
+	n := 0
+	for n < 16 {
+		n2, err := rand.Read(b[n:])
+		if err != nil {
+			return "", err
+		}
+
+		n += n2
+	}
+	return fmt.Sprintf(
+		"%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
 }
 
 func writeCacheHeader(f io.Writer, v string) error {

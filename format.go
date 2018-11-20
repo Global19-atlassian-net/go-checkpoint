@@ -62,16 +62,16 @@ func Format1(product string, version string, t time.Time) {
 func SubFormat1(product string, version string, t time.Time) {
 	sigfile := getSigfile()
 	params := &CheckParams{
-		Product:       product,
-		Version:       version,
-		SignatureFile: sigfile,
-		Type:          "s1",
+		Product:   product,
+		Version:   version,
+		Signature: generateSignature(),
+		Type:      "s1",
 	}
 	cb := func(resp *CheckResponse, err error) {
 		if err != nil {
 			return
 		}
-		if resp.CurrentVersion != "" && resp.CurrentVersion != version {
+		if resp.Outedated && resp.CurrentVersion != "" && resp.CurrentVersion != version {
 			fmt.Println("A new version of %v is available.", product)
 		}
 		return
