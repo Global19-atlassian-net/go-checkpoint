@@ -61,7 +61,6 @@ func Format1(product string, version string, t time.Time) {
 // SubFormat1 calls a basic version check at an interval
 func SubFormat1(product string, version string, t time.Time) {
 	sigfile := getSigfile()
-	ctx := context.Background()
 	params := &CheckParams{
 		Product:       product,
 		Version:       version,
