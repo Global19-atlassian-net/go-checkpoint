@@ -236,7 +236,7 @@ func Check(p *CheckParams) (*CheckResponse, error) {
 		p.OS = runtime.GOOS
 	}
 
-	// If we're given a SignatureFile, then attempt to read that.
+	// If we are not given a Signature but are given a SignatureFile, then attempt to read that.
 	signature := p.Signature
 	if p.Signature == "" && p.SignatureFile != "" {
 		var err error
@@ -431,7 +431,10 @@ func checkSignature(path string) (string, error) {
 	}
 
 	// The file doesn't exist, so create a signature.
-	b = generateSignature()
+	signature, err := generateSignature()
+	if err != nil {
+		return "", err
+	}
 
 	// Make sure the directory holding our signature exists.
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
@@ -446,7 +449,7 @@ func checkSignature(path string) (string, error) {
 	return signature, nil
 }
 
-func generateSignature() []byte {
+func generateSignature() (string, error) {
 	var b [16]byte
 	n := 0
 	for n < 16 {
@@ -458,7 +461,7 @@ func generateSignature() []byte {
 		n += n2
 	}
 	return fmt.Sprintf(
-		"%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
+		"%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:]), nil
 }
 
 func writeCacheHeader(f io.Writer, v string) error {

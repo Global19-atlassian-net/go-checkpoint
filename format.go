@@ -60,18 +60,21 @@ func Format1(product string, version string, t time.Time) {
 
 // SubFormat1 calls a basic version check at an interval
 func SubFormat1(product string, version string, t time.Time) {
-	sigfile := getSigfile()
+	signature, err := generateSignature()
+	if err != nil {
+		signature = "siggenerror"
+	}
 	params := &CheckParams{
 		Product:   product,
 		Version:   version,
-		Signature: generateSignature(),
+		Signature: signature,
 		Type:      "s1",
 	}
 	cb := func(resp *CheckResponse, err error) {
 		if err != nil {
 			return
 		}
-		if resp.Outedated && resp.CurrentVersion != "" && resp.CurrentVersion != version {
+		if resp.Outdated && resp.CurrentVersion != "" && resp.CurrentVersion != version {
 			fmt.Println("A new version of %v is available.", product)
 		}
 		return
