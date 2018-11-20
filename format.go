@@ -2,6 +2,7 @@ package checkpoint
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -73,6 +74,7 @@ func SubFormat1(product string, version string, t time.Time) {
 		if resp.CurrentVersion != "" && resp.CurrentVersion != version {
 			fmt.Println("A new version of %v is available.", product)
 		}
+		return
 	}
 	CheckInterval(params, 24*time.Hour, cb)
 }
