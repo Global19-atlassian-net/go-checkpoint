@@ -14,22 +14,31 @@ import (
 	"time"
 )
 
+const (
+	downloadUrl = "https://www.solo.io"
+)
+
+var (
+	baseExpectedResponse = &CheckResponse{
+		Product:             "test",
+		CurrentVersion:      "1.0",
+		CurrentReleaseDate:  0,
+		CurrentDownloadURL:  downloadUrl,
+		CurrentChangelogURL: downloadUrl,
+		ProjectWebsite:      downloadUrl,
+	}
+)
+
 func TestMain(m *testing.M) {
 	defer setup()()
 	os.Exit(m.Run())
 }
 
 func setup() func() {
+	verifyServerIsActive()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(100 * time.Millisecond) // for timeout case
-		response := &CheckResponse{
-			Product:             "test",
-			CurrentVersion:      "1.0",
-			CurrentReleaseDate:  0,
-			CurrentDownloadURL:  "http://www.solo.io",
-			CurrentChangelogURL: "http://www.solo.io",
-			ProjectWebsite:      "http://www.solo.io",
-		}
+		response := baseExpectedResponse
 		json.NewEncoder(w).Encode(response)
 	}))
 	fmt.Println("using checkpoint server at ", srv.URL)
@@ -39,17 +48,22 @@ func setup() func() {
 		os.Setenv("CHECKPOINT_URL", "")
 	}
 }
-func TestCheck(t *testing.T) {
-	expected := &CheckResponse{
-		Product:             "test",
-		CurrentVersion:      "1.0",
-		CurrentReleaseDate:  0,
-		CurrentDownloadURL:  "http://www.solo.io",
-		CurrentChangelogURL: "http://www.solo.io",
-		ProjectWebsite:      "http://www.solo.io",
-		Outdated:            false,
-		Alerts:              nil,
+
+func verifyServerIsActive() {
+	_, err := Check(&CheckParams{
+		Product: "test",
+		Version: "1.0",
+	})
+	if err != nil && strings.Contains(err.Error(), "connection refused") {
+		fmt.Println("Unable to connect to checkpoint server, please confirm it is running.")
+		os.Exit(1)
 	}
+}
+
+func TestCheck(t *testing.T) {
+	expected := baseExpectedResponse
+	expected.Outdated = false
+	expected.Alerts = nil
 
 	actual, err := Check(&CheckParams{
 		Product: "test",
@@ -61,12 +75,13 @@ func TestCheck(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(actual, expected) {
-		t.Fatalf("bad: %#v", actual)
+		t.Fatalf("\nbad: %#v\nexp: %#v", actual, expected)
 	}
 }
 
 func TestCheckTimeout(t *testing.T) {
-	os.Setenv("CHECKPOINT_TIMEOUT", "50")
+	// if this test fails, try reducing the timeout
+	os.Setenv("CHECKPOINT_TIMEOUT", "5")
 	defer os.Setenv("CHECKPOINT_TIMEOUT", "")
 
 	expected := "Client.Timeout exceeded while awaiting headers"
@@ -76,6 +91,9 @@ func TestCheckTimeout(t *testing.T) {
 		Version: "1.0",
 	})
 
+	if err == nil {
+		t.Fatalf("expected timeout error, none given")
+	}
 	if !strings.Contains(err.Error(), expected) {
 		t.Fatalf("bad: %#v", actual)
 	}
@@ -107,16 +125,9 @@ func TestCheck_cache(t *testing.T) {
 		t.Fatalf("err: %s", err)
 	}
 
-	expected := &CheckResponse{
-		Product:             "test",
-		CurrentVersion:      "1.0",
-		CurrentReleaseDate:  0,
-		CurrentDownloadURL:  "http://www.solo.io",
-		CurrentChangelogURL: "http://www.solo.io",
-		ProjectWebsite:      "http://www.solo.io",
-		Outdated:            false,
-		Alerts:              nil,
-	}
+	expected := baseExpectedResponse
+	expected.Outdated = false
+	expected.Alerts = nil
 
 	var actual *CheckResponse
 	for i := 0; i < 5; i++ {
@@ -142,16 +153,9 @@ func TestCheck_cacheNested(t *testing.T) {
 		t.Fatalf("err: %s", err)
 	}
 
-	expected := &CheckResponse{
-		Product:             "test",
-		CurrentVersion:      "1.0",
-		CurrentReleaseDate:  0,
-		CurrentDownloadURL:  "http://www.solo.io",
-		CurrentChangelogURL: "http://www.solo.io",
-		ProjectWebsite:      "http://www.solo.io",
-		Outdated:            false,
-		Alerts:              nil,
-	}
+	expected := baseExpectedResponse
+	expected.Outdated = false
+	expected.Alerts = nil
 
 	var actual *CheckResponse
 	for i := 0; i < 5; i++ {
@@ -172,16 +176,9 @@ func TestCheck_cacheNested(t *testing.T) {
 }
 
 func TestCheckInterval(t *testing.T) {
-	expected := &CheckResponse{
-		Product:             "test",
-		CurrentVersion:      "1.0",
-		CurrentReleaseDate:  0,
-		CurrentDownloadURL:  "http://www.solo.io",
-		CurrentChangelogURL: "http://www.solo.io",
-		ProjectWebsite:      "http://www.solo.io",
-		Outdated:            false,
-		Alerts:              nil,
-	}
+	expected := baseExpectedResponse
+	expected.Outdated = false
+	expected.Alerts = nil
 
 	params := &CheckParams{
 		Product: "test",
@@ -239,7 +236,7 @@ func TestRandomStagger(t *testing.T) {
 	min := 18 * time.Hour
 	max := 30 * time.Hour
 	for i := 0; i < 1000; i++ {
-		out := randomStagger(intv)
+		out := randomStagger(intv, 10)
 		if out < min || out > max {
 			t.Fatalf("bad: %v", out)
 		}
