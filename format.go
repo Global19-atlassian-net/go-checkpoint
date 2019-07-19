@@ -58,8 +58,7 @@ func CallReport(product string, version string, t time.Time) {
 	Report(ctx, report)
 }
 
-// CallCheck calls a basic version check at an interval
-func CallCheck(product string, version string, t time.Time) {
+func getCheckInputs(product, version string) (*CheckParams, func(resp *CheckResponse, err error)) {
 	signature, err := checkSignature(getSigfile())
 	if err != nil {
 		signature, err = generateSignature()
@@ -82,5 +81,18 @@ func CallCheck(product string, version string, t time.Time) {
 		}
 		return
 	}
+	return params, cb
+}
+
+// CallCheck calls a basic version check at an interval
+func CallCheck(product string, version string, t time.Time) {
+	params, cb := getCheckInputs(product, version)
 	CheckInterval(params, VersionCheckInterval, cb)
+}
+
+// CallCheck calls a basic version check at an interval
+func CallCheckOnceNow(product string, version string) {
+	params, cb := getCheckInputs(product, version)
+	resp, err := Check(params)
+	cb(resp, err)
 }
