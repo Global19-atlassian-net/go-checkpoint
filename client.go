@@ -21,12 +21,12 @@ type usageClient struct {
 func (c *usageClient) Start(name, version string) {
 	now := time.Now()
 	// starts the background check process
-	CallCheck(name, version, now)
+	callCheck(name, version, now)
 
 	// Do an immediate check and report within the next 30 seconds
 	go func() {
-		CallReport(name, version, now)
-		CallCheckOnceNow(name, version)
+		callReport(name, version, now)
+		callCheckOnceNow(name, version)
 	}()
 
 }

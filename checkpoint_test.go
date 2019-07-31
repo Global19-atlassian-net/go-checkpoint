@@ -50,7 +50,7 @@ func setup() func() {
 }
 
 func verifyServerIsActive() {
-	_, err := Check(&CheckParams{
+	_, err := check(&CheckParams{
 		Product: "test",
 		Version: "1.0",
 	})
@@ -65,7 +65,7 @@ func TestCheck(t *testing.T) {
 	expected.Outdated = false
 	expected.Alerts = nil
 
-	actual, err := Check(&CheckParams{
+	actual, err := check(&CheckParams{
 		Product: "test",
 		Version: "1.0",
 	})
@@ -86,7 +86,7 @@ func TestCheckTimeout(t *testing.T) {
 
 	expected := "Client.Timeout exceeded while awaiting headers"
 
-	actual, err := Check(&CheckParams{
+	actual, err := check(&CheckParams{
 		Product: "test",
 		Version: "1.0",
 	})
@@ -105,7 +105,7 @@ func TestCheck_disabled(t *testing.T) {
 
 	expected := &CheckResponse{}
 
-	actual, err := Check(&CheckParams{
+	actual, err := check(&CheckParams{
 		Product: "test",
 		Version: "1.0",
 	})
@@ -132,7 +132,7 @@ func TestCheck_cache(t *testing.T) {
 	var actual *CheckResponse
 	for i := 0; i < 5; i++ {
 		var err error
-		actual, err = Check(&CheckParams{
+		actual, err = check(&CheckParams{
 			Product:   "test",
 			Version:   "1.0",
 			CacheFile: filepath.Join(dir, "cache"),
@@ -160,7 +160,7 @@ func TestCheck_cacheNested(t *testing.T) {
 	var actual *CheckResponse
 	for i := 0; i < 5; i++ {
 		var err error
-		actual, err = Check(&CheckParams{
+		actual, err = check(&CheckParams{
 			Product:   "test",
 			Version:   "1.0",
 			CacheFile: filepath.Join(dir, "nested", "cache"),
@@ -197,7 +197,7 @@ func TestCheckInterval(t *testing.T) {
 		}
 	}
 
-	doneCh := CheckInterval(params, 500*time.Millisecond, checkFn)
+	doneCh := checkInterval(params, 500*time.Millisecond, checkFn)
 	defer close(doneCh)
 
 	select {
@@ -221,7 +221,7 @@ func TestCheckInterval_disabled(t *testing.T) {
 		defer close(calledCh)
 	}
 
-	doneCh := CheckInterval(params, 500*time.Millisecond, checkFn)
+	doneCh := checkInterval(params, 500*time.Millisecond, checkFn)
 	defer close(doneCh)
 
 	select {
@@ -249,7 +249,7 @@ func TestReport_sendsRequest(t *testing.T) {
 		Product:   "prod",
 	}
 
-	req, err := ReportRequest(r)
+	req, err := reportRequest(r)
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}

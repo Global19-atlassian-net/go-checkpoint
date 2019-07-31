@@ -26,12 +26,11 @@ import (
 	uuid "github.com/hashicorp/go-uuid"
 )
 
-
 const (
 	DefaultCheckpointHost = "checkpoint-api.solo.io"
 	DefaultUserAgent      = "solo.io/go-checkpoint"
 	DefaultScheme         = "https"
-	VersionCheckInterval  = 24*time.Hour
+	VersionCheckInterval  = 24 * time.Hour
 	PercentStagger        = 50
 )
 
@@ -76,13 +75,13 @@ func (i *ReportParams) signature() string {
 	return signature
 }
 
-// Report sends telemetry information to checkpoint
-func Report(ctx context.Context, r *ReportParams) error {
+// report sends telemetry information to checkpoint
+func report(ctx context.Context, r *ReportParams) error {
 	if disabled := os.Getenv("CHECKPOINT_DISABLE"); disabled != "" {
 		return nil
 	}
 
-	req, err := ReportRequest(r)
+	req, err := reportRequest(r)
 	if err != nil {
 		return err
 	}
@@ -99,8 +98,8 @@ func Report(ctx context.Context, r *ReportParams) error {
 	return nil
 }
 
-// ReportRequest creates a request object for making a report
-func ReportRequest(r *ReportParams) (*http.Request, error) {
+// reportRequest creates a request object for making a report
+func reportRequest(r *ReportParams) (*http.Request, error) {
 	// Populate some fields automatically if we can
 	if r.RunID == "" {
 		uuid, err := uuid.GenerateUUID()
@@ -171,7 +170,7 @@ type CheckParams struct {
 	// CacheFile, if specified, will cache the result of a check. The
 	// duration of the cache is specified by CacheDuration, and defaults
 	// to 48 hours if not specified. If the CacheFile is newer than the
-	// CacheDuration, than the Check will short-circuit and use those
+	// CacheDuration, than the check will short-circuit and use those
 	// results.
 	//
 	// If the CacheFile directory doesn't exist, it will be created with
@@ -201,7 +200,7 @@ type CheckResponse struct {
 // CheckAlert is a single alert message from a check request.
 //
 // These never have to be manually constructed, and are typically populated
-// into a CheckResponse as a result of the Check request.
+// into a CheckResponse as a result of the check request.
 type CheckAlert struct {
 	ID      int
 	Date    int
@@ -210,8 +209,8 @@ type CheckAlert struct {
 	Level   string
 }
 
-// Check checks for alerts and new version information.
-func Check(p *CheckParams) (*CheckResponse, error) {
+// check checks for alerts and new version information.
+func check(p *CheckParams) (*CheckResponse, error) {
 	if disabled := os.Getenv("CHECKPOINT_DISABLE"); disabled != "" && !p.Force {
 		return &CheckResponse{}, nil
 	}
@@ -300,11 +299,11 @@ func Check(p *CheckParams) (*CheckResponse, error) {
 	return checkResult(r)
 }
 
-// CheckInterval is used to check for a response on a given interval duration.
+// checkInterval is used to check for a response on a given interval duration.
 // The interval is not exact, and checks are randomized to prevent a thundering
 // herd. However, it is expected that on average one check is performed per
 // interval. The returned channel may be closed to stop background checks.
-func CheckInterval(p *CheckParams, interval time.Duration, cb func(*CheckResponse, error)) chan struct{} {
+func checkInterval(p *CheckParams, interval time.Duration, cb func(*CheckResponse, error)) chan struct{} {
 	doneCh := make(chan struct{})
 
 	if disabled := os.Getenv("CHECKPOINT_DISABLE"); disabled != "" {
@@ -315,7 +314,7 @@ func CheckInterval(p *CheckParams, interval time.Duration, cb func(*CheckRespons
 		for {
 			select {
 			case <-time.After(randomStagger(interval, PercentStagger)):
-				resp, err := Check(p)
+				resp, err := check(p)
 				cb(resp, err)
 			case <-doneCh:
 				return
@@ -372,7 +371,7 @@ func checkCache(current string, path string, d time.Duration) (io.ReadCloser, er
 		return nil, err
 	}
 
-	// Check the signature of the file
+	// check the signature of the file
 	var sig [4]byte
 	if err := binary.Read(f, binary.LittleEndian, sig[:]); err != nil {
 		f.Close()
@@ -384,7 +383,7 @@ func checkCache(current string, path string, d time.Duration) (io.ReadCloser, er
 		return nil, nil
 	}
 
-	// Check the version. If it changed, then rewrite
+	// check the version. If it changed, then rewrite
 	var length uint32
 	if err := binary.Read(f, binary.LittleEndian, &length); err != nil {
 		f.Close()

@@ -8,17 +8,17 @@ import (
 	"time"
 )
 
-// HomeDir returns the current users home directory irrespecitve of the OS
-func HomeDir() string {
+// homeDir returns the current users home directory irrespecitve of the OS
+func homeDir() string {
 	if h := os.Getenv("HOME"); h != "" {
 		return h
 	}
 	return os.Getenv("USERPROFILE") // windows
 }
 
-// ConfigDir returns the config directory for solo.io
-func ConfigDir() (string, error) {
-	d := filepath.Join(HomeDir(), ".soloio")
+// configDir returns the config directory for solo.io
+func configDir() (string, error) {
+	d := filepath.Join(homeDir(), ".soloio")
 	_, err := os.Stat(d)
 	if err == nil {
 		return d, nil
@@ -35,19 +35,19 @@ func ConfigDir() (string, error) {
 }
 
 func getSigfile() string {
-	sigfile := filepath.Join(HomeDir(), ".soloio.sig")
-	configDir, err := ConfigDir()
+	sigfile := filepath.Join(homeDir(), ".soloio.sig")
+	configDir, err := configDir()
 	if err == nil {
 		sigfile = filepath.Join(configDir, "soloio.sig")
 	}
 	return sigfile
 }
 
-// CallReport calls a basic version check
-func CallReport(product string, version string, t time.Time) {
+// callReport calls a basic version check
+func callReport(product string, version string, t time.Time) {
 	sigfile := getSigfile()
 	ctx := context.Background()
-	report := &ReportParams{
+	reportParams := &ReportParams{
 		Product:       product,
 		Version:       version,
 		StartTime:     t,
@@ -55,7 +55,7 @@ func CallReport(product string, version string, t time.Time) {
 		SignatureFile: sigfile,
 		Type:          "r1",
 	}
-	Report(ctx, report)
+	report(ctx, reportParams)
 }
 
 func getCheckInputs(product, version string) (*CheckParams, func(resp *CheckResponse, err error)) {
@@ -84,15 +84,15 @@ func getCheckInputs(product, version string) (*CheckParams, func(resp *CheckResp
 	return params, cb
 }
 
-// CallCheck calls a basic version check at an interval
-func CallCheck(product string, version string, t time.Time) {
+// callCheck calls a basic version check at an interval
+func callCheck(product string, version string, t time.Time) {
 	params, cb := getCheckInputs(product, version)
-	CheckInterval(params, VersionCheckInterval, cb)
+	checkInterval(params, VersionCheckInterval, cb)
 }
 
-// CallCheck calls a basic version check at an interval
-func CallCheckOnceNow(product string, version string) {
+// callCheck calls a basic version check at an interval
+func callCheckOnceNow(product string, version string) {
 	params, cb := getCheckInputs(product, version)
-	resp, err := Check(params)
+	resp, err := check(params)
 	cb(resp, err)
 }
